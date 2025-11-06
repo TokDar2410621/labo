@@ -61,7 +61,7 @@ CREATE TABLE Donnees (
     dateHeure                   DATETIME2                   NOT NULL,
     idCapteur                   INT                         NOT NULL,
     mesure                      FLOAT                       NULL,
-    photo                       NVARCHAR(255)               NULL,
+    photoBlob                   VARBINARY(MAX)              NULL,
     noSalle                     INT                         NOT NULL
 
 );

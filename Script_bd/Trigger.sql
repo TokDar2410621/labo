@@ -107,3 +107,73 @@ BEGIN
     END
 END;
 GO
+
+-- Recréer le trigger pour valider selon le type de capteur
+IF OBJECT_ID('trg_check_donnees_capteur', 'TR') IS NOT NULL
+    DROP TRIGGER trg_check_donnees_capteur;
+GO
+
+CREATE TRIGGER trg_check_donnees_capteur
+ON Donnees
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Vérifier capteur MOUVEMENT : pas de mesure, pas de photo
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        JOIN Capteur c ON c.idCapteur_PK = i.idCapteur
+        WHERE c.type = 'MOUVEMENT'
+          AND (i.mesure IS NOT NULL OR i.photoBlob IS NOT NULL)
+    )
+    BEGIN
+        RAISERROR('Un capteur MOUVEMENT ne peut pas avoir de mesure ou de photo', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END
+
+    -- Vérifier capteur BRUIT : mesure obligatoire, pas de photo
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        JOIN Capteur c ON c.idCapteur_PK = i.idCapteur
+        WHERE c.type = 'BRUIT'
+          AND (i.mesure IS NULL OR i.photoBlob IS NOT NULL)
+    )
+    BEGIN
+        RAISERROR('Un capteur BRUIT doit avoir une mesure et pas de photo', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END
+
+    -- Vérifier capteur CAMERA : photoBlob obligatoire, pas de mesure
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        JOIN Capteur c ON c.idCapteur_PK = i.idCapteur
+        WHERE c.type = 'CAMERA'
+          AND (i.photoBlob IS NULL OR i.mesure IS NOT NULL)
+    )
+    BEGIN
+        RAISERROR('Un capteur CAMERA doit avoir une photo (BLOB) et pas de mesure', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END
+
+    -- Vérifier plage de mesure pour capteur BRUIT (0-120 dB)
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        JOIN Capteur c ON c.idCapteur_PK = i.idCapteur
+        WHERE c.type = 'BRUIT'
+          AND (i.mesure < 0 OR i.mesure > 120)
+    )
+    BEGIN
+        RAISERROR('La mesure de bruit doit être entre 0 et 120 dB', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END
+END;
+GO

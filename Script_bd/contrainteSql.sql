@@ -117,5 +117,17 @@ ADD CONSTRAINT fk_evenement_donnee
 FOREIGN KEY (idDonnee)
 REFERENCES Donnees (idDonnee_PK)
 
+-- Mettre à jour la contrainte : au moins une donnée (mesure OU photoBlob)
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'ck_donnees_au_moins_une')
+    ALTER TABLE Donnees DROP CONSTRAINT ck_donnees_au_moins_une;
 GO
 
+ALTER TABLE Donnees
+ADD CONSTRAINT ck_donnees_au_moins_une
+CHECK (mesure IS NOT NULL OR photoBlob IS NOT NULL);
+GO
+
+-- Supprimer l'ancienne contrainte de format de photo si elle existe encore
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'ck_donnees_photo_format')
+    ALTER TABLE Donnees DROP CONSTRAINT ck_donnees_photo_format;
+GO

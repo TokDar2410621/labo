@@ -1,0 +1,3 @@
+ self.server = 'DICJWIN01.cegepjonquiere.ca'
+        self.database = 'Prog3A25_bdSalleSense'
+        self.username = 'prog3e09'

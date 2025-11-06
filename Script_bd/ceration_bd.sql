@@ -1,0 +1,2 @@
+DROP DATABASE IF EXISTS Prog3A25_bdSalleSense;
+CREATE DATABASE Prog3A25_bdSalleSense;
